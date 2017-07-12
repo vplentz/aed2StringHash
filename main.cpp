@@ -5,8 +5,8 @@ using namespace std;
 class Node {
     private:
         string word;
-        Node * next = NULL;
-        Node * previusly = NULL;
+        Node * next = NULL;//or right son
+        Node * previusly = NULL;// or left Son
     public:
     Node(){
         this->next = NULL;
@@ -39,7 +39,6 @@ class Node {
     }
 
 };
-
 class Hash{
     private:
         Node ** table;
@@ -112,24 +111,23 @@ class Hash{
         }
         cout << "fail\n";
     }
-    void put(string input){
+    bool put(string input){
         int hashedTo = hashF(input);
         if (this->table[hashedTo] == NULL) {
             Node *newNode = new Node(input, NULL, NULL);
             this->table[hashedTo] = newNode;
-        }else {
+        }else{
             Node *newNode = new Node(input, this->getTable(hashedTo), NULL);
             this->table[hashedTo] = newNode;
             this->table[hashedTo]->getNext()->setPreviusly(newNode);
         }
         this->numOfElements++;
-        cout << "ok\n";
         if(((double)this->numOfElements/(double)this->tableSize) > this->loadFactor){
-            cout<< "should rehash";
+           // cout<< "should rehash";
             rehash();
-            printHash();
+            //printHash();
         }
-
+        return true;
     }
     bool containsValue(string value){
         int hashedto = hashF(value);
@@ -191,6 +189,8 @@ class Hash{
 };
 
 
+bool recognizeIt(string input, Hash * hashTable);
+
 int main() {
     string inputWord, lastInputWord;
     Hash *hashTable = new Hash(0.75, 5);
@@ -198,8 +198,8 @@ int main() {
         if(inputWord.compare("+") == 0){
             if (lastInputWord.empty() || hashTable->containsValue(lastInputWord))
                 cout << "fail\n";
-            else
-                hashTable->put(lastInputWord);
+            else if(hashTable->put(lastInputWord))
+                cout << "ok\n";
         }else if(inputWord.compare("-") == 0){
             if(lastInputWord.empty())
                 cout << "fail\n";
@@ -216,9 +216,61 @@ int main() {
             lastInputWord = inputWord;
             if(hashTable->containsValue(lastInputWord))
                 cout << "ok\n";
+            else{
+                if(!recognizeIt(lastInputWord, hashTable))
+                    cout << "not found\n";
+            }
         }
     }
     return 0;
 }
 
-
+bool recognizeIt(string input, Hash * hashTable){
+    //one more char put
+    bool foundIncorrect = false;
+    for(int i = 0; i < input.length() ;i++){
+        string newInput;
+        newInput.append(input);
+        newInput.erase(i,1);
+       // cout << newInput +"\n";
+        if(hashTable->containsValue(newInput))
+            cout<< newInput + "\n";
+    };
+    // one less char input
+    for(int i = 0; i <= input.length() ;i++){
+       char letter = 'a';
+       while(letter >= 'a' && letter <='z'){
+           string newInput;
+           newInput.append(input);
+           newInput.insert(i, 1, letter);
+           //cout << newInput +"\n";
+           if(hashTable->containsValue(newInput))
+               cout<< newInput + "\n";
+           letter++;
+       }
+    }
+    // changed letters
+    for(int i=0; i < input.length() -1 ; i++){
+        string newInput;
+        newInput.append(input);
+        swap(newInput[i], newInput[i+1]);
+        //cout << newInput + " cl\n";
+        if(hashTable->containsValue(newInput))
+            cout<< newInput + "\n";
+    }
+    // wrong letter
+    for(int i=0; i < input.length(); i++){
+        char letter = 'a';
+        while(letter >= 'a' && letter <='z'){
+            string newInput;
+            newInput.append(input);
+            newInput[i] = letter;
+            //cout << newInput +"\n";
+            if(hashTable->containsValue(newInput))
+                cout<< newInput + "\n";
+            letter++;
+        }
+    }
+    return foundIncorrect;
+    //cout << input;
+}
