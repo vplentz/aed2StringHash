@@ -1,9 +1,10 @@
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 
 class Node {
-    private:
+    protected:
         string word;
         Node * next = NULL;//or right son
         Node * previusly = NULL;// or left Son
@@ -18,13 +19,19 @@ class Node {
         this->word = word;
         this->previusly = previusly;
     }
+    Node ** getPreviuslyPointeer(){
+        return  &this->previusly;
+    }
     Node * getPreviusly(){
         return  this->previusly;
     }
+
     string getWord() {
         return this->word;
     }
-
+    Node ** getNextPointeer(){
+        return  &this->next;
+    }
     Node  * getNext() {
         return this->next;
     }
@@ -187,7 +194,105 @@ class Hash{
 
     }
 };
-
+class AvlTree{
+private:
+    Node * root;
+    void rightBalance(Node ** root){
+        int fb = balancingFactor((*root)->getNext());
+        if(fb < 0){
+            RRRotation(root);
+            return;
+        }else if(fb > 0){
+            LLRotation(((* root)->getNextPointeer()));
+            RRRotation(root);
+            return;
+        }
+    }
+    void leftBalance(Node ** root){
+        int fb= balancingFactor((*root)->getPreviusly());
+        if(fb > 0){
+            LLRotation(root);
+            return;
+        }else if(fb < 0){
+            RRRotation(((*root)->getPreviuslyPointeer()));
+            LLRotation(root);
+            return;
+        }
+    }
+    void balance(Node ** root){
+        int fb = balancingFactor(*root);
+        if(fb > 1){
+            leftBalance(root);
+        }else if(fb < -1){
+            rightBalance(root);
+        }else return;
+    }
+    int balancingFactor(Node *root){
+        if(root == NULL) return 0;
+        return height(root->getPreviusly()) - height(root->getNext());
+    }
+    int height(Node *node){
+        int leftHeight, rightHeight;
+        if(node == NULL) return 0;
+        leftHeight = height(node->getPreviusly());
+        rightHeight = height(node->getNext());
+        if(leftHeight > rightHeight){
+            return leftHeight+1;
+        }else return rightHeight+1;
+    }
+//rotação simples a direita
+    void LLRotation(Node ** root){
+        Node * node = (*root)->getPreviusly();
+        (*root)->setPreviusly(node->getNext());
+        node->setNext(*root);
+        *root = node;
+    }
+//rotação simples a esquerda
+    void RRRotation(Node ** root){
+        Node * node = (*root)->getNext();
+        (*root)->setNext(node->getPreviusly());
+        node->setPreviusly(*root);
+        *root = node;
+    }
+public:
+    AvlTree(){
+        this->root = NULL;
+    }
+    Node ** getRoot(){
+        return &this->root;
+    }
+    void setRoot(Node * root){
+        this->root = root;
+    }
+    void insert(string input, Node **root){
+        if(*root == NULL )
+            *root = new Node(input, NULL, NULL);
+        else{
+            if((*root)->getWord().compare(input) < 0){
+                insert(input, (*root)->getNextPointeer());
+                balance(root);
+            }
+            else if((*root)->getWord().compare(input) > 0){
+                insert(input, (*root)->getPreviuslyPointeer());
+                balance(root);
+            }
+        }
+    }
+    void printSimetricOrder(Node *root){
+        if(root != NULL){
+            printSimetricOrder(root->getPreviusly());
+            cout << (root)->getWord() + "\n";
+            printSimetricOrder(root->getNext());
+        }
+    }
+    void freeTree(Node **root){
+        if((*root) != NULL){
+            freeTree((*root)->getPreviuslyPointeer());
+            freeTree((*root)->getNextPointeer());
+            delete *root;
+        }
+    }
+};
 
 bool recognizeIt(string input, Hash * hashTable);
 
@@ -213,6 +318,7 @@ int main() {
         }else if(inputWord.compare("?") == 0){
             hashTable->printHash();
         }else{//find word
+            transform(inputWord.begin(), inputWord.end(), inputWord.begin(), ::tolower);
             lastInputWord = inputWord;
             if(hashTable->containsValue(lastInputWord))
                 cout << "ok\n";
@@ -227,14 +333,16 @@ int main() {
 
 bool recognizeIt(string input, Hash * hashTable){
     //one more char put
-    bool foundIncorrect = false;
+    AvlTree * avlTree = new AvlTree();
     for(int i = 0; i < input.length() ;i++){
         string newInput;
         newInput.append(input);
         newInput.erase(i,1);
        // cout << newInput +"\n";
-        if(hashTable->containsValue(newInput))
-            cout<< newInput + "\n";
+        if(hashTable->containsValue(newInput)){
+            avlTree->insert(newInput, avlTree->getRoot());
+           // cout<< newInput + "\n";
+        }
     };
     // one less char input
     for(int i = 0; i <= input.length() ;i++){
@@ -245,9 +353,18 @@ bool recognizeIt(string input, Hash * hashTable){
            newInput.insert(i, 1, letter);
            //cout << newInput +"\n";
            if(hashTable->containsValue(newInput))
-               cout<< newInput + "\n";
+               avlTree->insert(newInput, avlTree->getRoot());
+
+           //cout<< newInput + "\n";
            letter++;
        }
+        string newInput;
+        newInput.append(input);
+        newInput.insert(i, 1, '-');
+        //cout << newInput +"\n";
+        if(hashTable->containsValue(newInput))
+            avlTree->insert(newInput, avlTree->getRoot());
+        //cout<< newInput + "\n";
     }
     // changed letters
     for(int i=0; i < input.length() -1 ; i++){
@@ -256,7 +373,9 @@ bool recognizeIt(string input, Hash * hashTable){
         swap(newInput[i], newInput[i+1]);
         //cout << newInput + " cl\n";
         if(hashTable->containsValue(newInput))
-            cout<< newInput + "\n";
+            avlTree->insert(newInput, avlTree->getRoot());
+
+//            cout<< newInput + "\n";
     }
     // wrong letter
     for(int i=0; i < input.length(); i++){
@@ -267,10 +386,27 @@ bool recognizeIt(string input, Hash * hashTable){
             newInput[i] = letter;
             //cout << newInput +"\n";
             if(hashTable->containsValue(newInput))
-                cout<< newInput + "\n";
+                avlTree->insert(newInput, avlTree->getRoot());
+
+//                cout<< newInput + "\n";
             letter++;
         }
+        string newInput;
+        newInput.append(input);
+        newInput[i] = '-';
+        //cout << newInput +"\n";
+        if(hashTable->containsValue(newInput))
+            avlTree->insert(newInput, avlTree->getRoot());
+
     }
-    return foundIncorrect;
+    avlTree->printSimetricOrder(*avlTree->getRoot());
+    if(*avlTree->getRoot()!=NULL){
+        avlTree->freeTree(avlTree->getRoot());
+        delete avlTree;
+        return true;
+    }else{
+        delete avlTree;
+        return  false;
+    }
     //cout << input;
 }
