@@ -54,8 +54,13 @@ class Hash{
         double loadFactor; //numOfElements/tableSize
 
     int hashF(string input){
-        int inputInt = (int) input.size();
-        return inputInt%this->tableSize;
+        //fnv=1a hash
+        unsigned int hash = 0x811c9dc5;
+        for(int i = 0; i < input.length(); i++){
+            hash = hash xor input[i];
+            hash = hash * 16777619;
+        }
+        return hash % this->tableSize;
     }
     public:
 
