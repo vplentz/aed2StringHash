@@ -68,7 +68,7 @@ class Hash{
         this->numOfElements = 0;
         this->loadFactor = loadFactor;
         this->tableSize = tableSize;
-        this->table = new Node*[tableSize];
+        this->table = new Node*[tableSize]();
     }
     Node  * getTable(int n) {
         return this->table[n];
@@ -125,7 +125,7 @@ class Hash{
     }
     bool put(string input){
         int hashedTo = hashF(input);
-        if (this->table[hashedTo] == NULL) {
+        if(this->table[hashedTo] == NULL){
             Node *newNode = new Node(input, NULL, NULL);
             this->table[hashedTo] = newNode;
         }else{
